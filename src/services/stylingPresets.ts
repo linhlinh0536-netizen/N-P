@@ -12,7 +12,7 @@ type LookPreset = { garmentType: GarmentType; style: StyleType; primaryColor: Co
 const OCCASION_PRESETS: Record<OccasionType, LookPreset> = {
   tet_nguyen_dan:       { garmentType: 'ao_dai',    style: 'elegant',     primaryColor: 'red_crimson',  accessories: ['non_la', 'tui_gam'] },
   chup_ky_yeu:         { garmentType: 'ao_dai',    style: 'minimalist',  primaryColor: 'white_ivory', accessories: ['kieng_bac'] },
-  le_hoi_van_hoa:      { garmentType: 'ao_tu_than',style: 'traditional', primaryColor: 'pink_lotus',  accessories: ['non_quai_thao', 'khan_mo_qua'] },
+  le_hoi_van_hoa:      { garmentType: 'ao_tu_than',style: 'traditional', primaryColor: 'pink_lotus',  accessories: ['non_quai_thao'] },
   tham_quan_di_tich:   { garmentType: 'ao_ngu_than',style: 'traditional', primaryColor: 'blue_teal',   accessories: ['khan_dong', 'quat_xep'] },
 };
 

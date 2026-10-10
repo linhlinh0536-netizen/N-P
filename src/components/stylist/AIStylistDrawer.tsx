@@ -2,35 +2,33 @@ import React, { useState } from 'react';
 import { OutfitState, StylistRecommendation } from '../../types';
 import { requestStylistAdvice } from '../../services/geminiService';
 import { GARMENTS_DATA } from '../../data/garments';
-import { COLOR_PALETTE, ACCESSORIES_CATALOG, OCCASIONS_LIST, STYLES_LIST } from '../../data/options';
+import { COLOR_PALETTE } from '../../data/options';
 import confetti from 'canvas-confetti';
 import { 
   Sparkles, 
   X, 
   Send, 
-  Check, 
-  Wand2, 
-  BookOpen, 
-  Lightbulb, 
-  Layers, 
-  RefreshCw,
-  Cpu,
-  ArrowRight
+  Loader2, 
+  CheckCircle2, 
+  Info, 
+  ArrowRight, 
+  Cpu, 
+  Bot, 
+  Lightbulb 
 } from 'lucide-react';
 
 interface AIStylistDrawerProps {
   isOpen: boolean;
   onClose: () => void;
   currentOutfit: OutfitState;
-  onApplyOutfit: (updated: OutfitState) => void;
+  onApplyOutfit: (outfit: OutfitState) => void;
 }
 
 const PRESET_PROMPTS = [
-  'Phối Áo ngũ thân đỏ son đi chúc Tết thanh lịch, trang nhã cùng gia đình',
-  'Áo dài trắng tinh khôi chụp kỷ yếu lưu giữ tuổi học trò thanh xuân',
-  'Bộ Áo tứ thân duyên dáng trẩy hội quan họ Kinh Bắc đầu xuân',
-  'Thăm Cố đô Huế hoài cổ, trang trọng nhưng vẫn trẻ trung',
-  'Gen Z remix: phối Việt phục hiện đại, tối giản nhưng đậm bản sắc'
+  'Tớ muốn phối áo dài xanh đi chơi Tết, trẻ trung nhưng vẫn thanh lịch.',
+  'Áo tứ thân du xuân trẩy hội Kinh Bắc đầy chất thơ với nón quai thao.',
+  'Áo ngũ thân trang nghiêm đi lễ chùa và tham quan di tích cố đô Huế.',
+  'Gen Z Remix: Áo dài phối phụ kiện tối giản để chụp kỷ yếu thanh xuân.'
 ];
 
 export const AIStylistDrawer: React.FC<AIStylistDrawerProps> = ({
@@ -42,28 +40,25 @@ export const AIStylistDrawer: React.FC<AIStylistDrawerProps> = ({
   const [prompt, setPrompt] = useState('');
   const [loading, setLoading] = useState(false);
   const [recommendation, setRecommendation] = useState<StylistRecommendation | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [applied, setApplied] = useState(false);
 
   if (!isOpen) return null;
 
-  const handleSubmit = async (userPrompt?: string) => {
-    const textToSubmit = (userPrompt ?? prompt).trim();
-    if (!textToSubmit) return;
+  const handleConsult = async (customPrompt?: string) => {
+    const query = customPrompt || prompt;
+    if (!query.trim()) return;
 
-    if (userPrompt) setPrompt(userPrompt);
     setLoading(true);
-    setError(null);
-
+    setApplied(false);
     try {
       const result = await requestStylistAdvice({
-        prompt: textToSubmit,
+        prompt: query,
         currentOutfit,
         taskType: 'recommend'
       });
       setRecommendation(result);
-    } catch (err: any) {
-      console.error('Stylist error:', err);
-      setError('Có lỗi khi kết nối với AI Stylist. Vui lòng thử lại!');
+    } catch (err) {
+      console.error(err);
     } finally {
       setLoading(false);
     }
@@ -71,255 +66,211 @@ export const AIStylistDrawer: React.FC<AIStylistDrawerProps> = ({
 
   const handleApply = () => {
     if (!recommendation) return;
-    try {
-      confetti({
-        particleCount: 50,
-        spread: 60,
-        origin: { y: 0.7 },
-        colors: ['#8B1E2F', '#C89D42', '#D97706', '#E9D5A1']
-      });
-    } catch {
-      // ignore
-    }
     onApplyOutfit(recommendation.outfit);
-    onClose();
+    setApplied(true);
+    confetti({
+      particleCount: 70,
+      spread: 60,
+      origin: { y: 0.6 },
+      colors: ['#8B1E2F', '#C69A52', '#3D7C85', '#EBD292']
+    });
+    setTimeout(() => {
+      onClose();
+    }, 1200);
   };
 
-  const garment = recommendation ? GARMENTS_DATA[recommendation.outfit.garmentType] : null;
-  const color = recommendation ? COLOR_PALETTE.find(c => c.id === recommendation.outfit.primaryColor) : null;
-  const occasion = recommendation ? OCCASIONS_LIST.find(o => o.id === recommendation.outfit.occasion) : null;
-  const style = recommendation ? STYLES_LIST.find(s => s.id === recommendation.outfit.style) : null;
+  const currentGarment = GARMENTS_DATA[recommendation?.outfit.garmentType || currentOutfit.garmentType];
+  const currentColor = COLOR_PALETTE.find(c => c.id === (recommendation?.outfit.primaryColor || currentOutfit.primaryColor));
 
   return (
-    <div className="fixed inset-0 z-50 overflow-hidden flex justify-end">
-      {/* Backdrop */}
-      <div 
-        className="fixed inset-0 bg-black/40 backdrop-blur-xs transition-opacity duration-300"
-        onClick={onClose}
-      />
-
-      {/* Drawer Container */}
-      <div className="relative z-10 w-full max-w-lg bg-[#FAF7F2] shadow-2xl flex flex-col h-full border-l border-[#D9CEBA]">
-        {/* Header */}
-        <div className="px-6 py-5 bg-gradient-to-r from-[#8B1E2F] to-[#721524] text-white flex items-center justify-between shadow-sm">
+    <div className="fixed inset-0 z-50 flex items-center justify-end bg-black/40 backdrop-blur-sm transition-all duration-300">
+      <div className="relative w-full max-w-lg h-full bg-[#FAF7F2] shadow-2xl flex flex-col border-l border-[#E5DAC8] overflow-hidden animate-in slide-in-from-right duration-300">
+        
+        {/* HEADER */}
+        <div className="px-6 py-5 bg-[#F2ECE3] border-b border-[#E2D6C3] flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-white/15 flex items-center justify-center backdrop-blur-xs text-[#E9D5A1] border border-white/20 shadow-inner">
+            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-[#8B1E2F] to-[#681120] flex items-center justify-center text-[#EBD292] shadow-md shadow-[#8B1E2F]/20">
               <Sparkles className="w-5 h-5 animate-pulse" />
             </div>
             <div>
-              <div className="flex items-center gap-2">
-                <h3 className="font-serif text-lg font-bold tracking-wide text-[#FAF7F2]">AI Cultural Stylist</h3>
-                <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-[#C89D42]/30 border border-[#C89D42]/40 text-[#E9D5A1] uppercase tracking-wider">
-                  Gemini
-                </span>
-              </div>
-              <p className="text-xs text-white/80">Trợ lý cố vấn trang phục & quy chuẩn di sản Việt</p>
+              <h2 className="font-serif font-bold text-lg text-[#222120] flex items-center gap-2">
+                NẾP Cultural Stylist
+              </h2>
+              <p className="text-xs text-[#7A7268]">Cố vấn phối Việt phục thông minh bằng Gemini</p>
             </div>
           </div>
+
           <button
             onClick={onClose}
-            className="w-8 h-8 rounded-lg flex items-center justify-center text-white/80 hover:text-white hover:bg-white/10 transition-colors"
+            className="w-8 h-8 rounded-full hover:bg-black/5 flex items-center justify-center text-[#686054] transition-colors cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        {/* Content Body */}
+        {/* CONTENT AREA */}
         <div className="flex-1 overflow-y-auto p-6 space-y-6">
-          {/* Natural language input */}
-          <div className="bg-white p-4 rounded-2xl border border-[#E5DECF] shadow-xs space-y-3">
-            <label className="text-xs font-semibold uppercase tracking-wider text-[#736B5E] flex items-center gap-2">
-              <Wand2 className="w-4 h-4 text-[#8B1E2F]" />
-              Bạn muốn phối đồ cho dịp gì hoặc phong cách nào?
+          
+          {/* Status Badge */}
+          <div className="flex items-center justify-between text-xs px-3.5 py-2 rounded-xl bg-white/70 border border-[#E8DFC9]">
+            <span className="flex items-center gap-1.5 text-[#595248]">
+              <Bot className="w-4 h-4 text-[#8B1E2F]" />
+              Trạng thái AI:
+            </span>
+            {recommendation?.source === 'gemini' ? (
+              <span className="font-medium text-[#2E7D52] flex items-center gap-1">
+                <span className="w-2 h-2 rounded-full bg-[#2E7D52] animate-ping" />
+                Google Gemini 3.8 Flash (Live)
+              </span>
+            ) : (
+              <span className="font-medium text-[#C69A52] flex items-center gap-1" title="Chạy bằng bộ quy tắc văn hóa thông minh">
+                <Cpu className="w-3.5 h-3.5 text-[#C69A52]" />
+                Smart Cultural Engine (Demo Mode)
+              </span>
+            )}
+          </div>
+
+          {/* Natural Language Prompt Input */}
+          <div className="space-y-2">
+            <label className="text-xs uppercase tracking-wider text-[#736B60] font-semibold flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-[#8B1E2F]" />
+              Bạn muốn diện trang phục thế nào hôm nay?
             </label>
             <div className="relative">
               <textarea
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    handleSubmit();
-                  }
-                }}
-                placeholder="Ví dụ: Mình muốn phối một bộ Áo ngũ thân đỏ son đi chụp ảnh Tết ở Văn Miếu, cần nét thanh nhã trang trọng..."
-                className="w-full h-24 p-3 pr-10 text-xs sm:text-sm text-[#241F1A] bg-[#FAF7F2] border border-[#D9CEBA] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#8B1E2F]/40 focus:border-[#8B1E2F] resize-none placeholder:text-[#A89F91]"
+                placeholder="VD: Tớ muốn mặc áo dài màu xanh hoặc hồng pastel đi chụp kỷ yếu, phong cách trẻ trung và thanh lịch..."
+                rows={3}
+                className="w-full p-3.5 rounded-2xl bg-white border border-[#E0D5C3] text-sm text-[#222120] placeholder-[#A09689] focus:outline-none focus:ring-2 focus:ring-[#8B1E2F] focus:border-transparent resize-none shadow-inner"
               />
               <button
-                onClick={() => handleSubmit()}
+                type="button"
                 disabled={loading || !prompt.trim()}
-                className="absolute right-2.5 bottom-3.5 p-2 rounded-lg bg-[#8B1E2F] hover:bg-[#721524] text-white disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-xs"
+                onClick={() => handleConsult()}
+                className="absolute right-3 bottom-3 p-2 rounded-xl bg-[#8B1E2F] text-white disabled:opacity-40 hover:bg-[#701524] transition-all cursor-pointer shadow-md"
               >
-                <Send className="w-3.5 h-3.5" />
+                {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
               </button>
-            </div>
-
-            {/* Quick Prompts */}
-            <div className="space-y-1.5 pt-1">
-              <div className="text-[11px] text-[#8C8273] font-medium flex items-center gap-1.5">
-                <Lightbulb className="w-3 h-3 text-[#C89D42]" />
-                Gợi ý nhanh cho bạn:
-              </div>
-              <div className="flex flex-wrap gap-1.5">
-                {PRESET_PROMPTS.map((p, idx) => (
-                  <button
-                    key={idx}
-                    type="button"
-                    onClick={() => handleSubmit(p)}
-                    className="text-[11px] text-left px-2.5 py-1 rounded-lg bg-[#F5EFE6] hover:bg-[#EFE5D5] text-[#52493E] border border-[#E5DECF] transition-colors line-clamp-1"
-                  >
-                    {p}
-                  </button>
-                ))}
-              </div>
             </div>
           </div>
 
-          {/* Loading state */}
+          {/* Quick Preset Prompts */}
+          <div className="space-y-2">
+            <span className="text-[11px] uppercase tracking-wider text-[#8A8174] font-medium flex items-center gap-1">
+              <Lightbulb className="w-3.5 h-3.5 text-[#C69A52]" />
+              Gợi ý câu lệnh mẫu:
+            </span>
+            <div className="flex flex-col gap-1.5">
+              {PRESET_PROMPTS.map((p, idx) => (
+                <button
+                  key={idx}
+                  type="button"
+                  onClick={() => {
+                    setPrompt(p);
+                    handleConsult(p);
+                  }}
+                  className="text-left text-xs p-2.5 rounded-xl bg-white/80 hover:bg-white border border-[#EAE1D1] text-[#4F473E] hover:border-[#8B1E2F]/30 transition-all cursor-pointer flex items-center justify-between group"
+                >
+                  <span className="truncate pr-2">{p}</span>
+                  <ArrowRight className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 text-[#8B1E2F] transition-opacity shrink-0" />
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Loading State */}
           {loading && (
-            <div className="p-8 text-center space-y-3 bg-white rounded-2xl border border-[#E5DECF]">
-              <div className="w-12 h-12 rounded-full border-3 border-[#8B1E2F]/20 border-t-[#8B1E2F] animate-spin mx-auto" />
-              <div className="space-y-1">
-                <p className="text-sm font-medium text-[#241F1A] font-serif">Đang tra cứu điển chế & văn hóa trang phục...</p>
-                <p className="text-xs text-[#8C8273]">AI Stylist đang đối chiếu màu sắc, dịp lễ và phụ kiện phù hợp</p>
-              </div>
+            <div className="p-8 text-center bg-white/60 rounded-2xl border border-[#EAE2D2] flex flex-col items-center justify-center gap-3">
+              <Loader2 className="w-7 h-7 text-[#8B1E2F] animate-spin" />
+              <div className="text-sm font-medium text-[#443D35]">Gemini đang tra cứu tri thức văn hóa...</div>
+              <div className="text-xs text-[#877E72]">Cân đối ngũ hành màu sắc, sự kiện và phụ kiện thích hợp</div>
             </div>
           )}
 
-          {/* Error state */}
-          {error && !loading && (
-            <div className="p-4 rounded-xl bg-red-50 border border-red-200 text-xs text-red-700">
-              {error}
-            </div>
-          )}
-
-          {/* Recommendation card */}
+          {/* RESULT CARD */}
           {recommendation && !loading && (
-            <div className="space-y-4">
-              {/* Header result badge */}
-              <div className="flex items-center justify-between px-1">
-                <span className="text-xs font-semibold text-[#8B1E2F] flex items-center gap-1.5">
-                  <Check className="w-4 h-4" /> Bản phối gợi ý từ NẾP
-                </span>
-                <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 flex items-center gap-1">
-                  <Cpu className="w-3 h-3" />
-                  {recommendation.source === 'gemini' ? 'Gemini 2.5 API' : 'Cultural Rule Engine'}
-                </span>
-              </div>
-
-              {/* Proposed Outfit Card */}
-              <div className="bg-white p-5 rounded-2xl border border-[#D9CEBA] shadow-sm space-y-4">
+            <div className="bg-white rounded-2xl border border-[#E5DAC6] p-5 shadow-sm space-y-4 animate-in fade-in duration-300">
+              
+              {/* Header result */}
+              <div className="flex items-start justify-between">
                 <div>
-                  <h4 className="font-serif text-lg font-bold text-[#241F1A]">
-                    {garment?.name || 'Việt Phục'}
-                  </h4>
-                  <p className="text-xs text-[#736B5E]">{recommendation.explanation}</p>
+                  <span className="text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full bg-[#8B1E2F]/10 text-[#8B1E2F] font-semibold">
+                    Đề xuất từ AI Stylist
+                  </span>
+                  <h3 className="font-serif font-bold text-[#222120] text-base mt-1.5">
+                    {recommendation.outfit.title || `Outfit ${currentGarment.name}`}
+                  </h3>
                 </div>
 
-                {/* Attributes grid */}
-                <div className="grid grid-cols-2 gap-2 pt-2 border-t border-[#F0EAE1]">
-                  <div className="p-2.5 rounded-xl bg-[#FAF7F2] border border-[#EFE5D5]">
-                    <span className="text-[10px] uppercase tracking-wider text-[#8C8273] block">Màu sắc chủ đạo</span>
-                    <div className="flex items-center gap-2 mt-1">
-                      <span 
-                        className="w-3.5 h-3.5 rounded-full border border-black/15 shadow-2xs" 
-                        style={{ backgroundColor: color?.hex }}
-                      />
-                      <span className="text-xs font-medium text-[#241F1A]">{color?.name}</span>
-                    </div>
-                  </div>
+                <div 
+                  className="w-6 h-6 rounded-full border border-black/10 shadow-sm shrink-0"
+                  style={{ backgroundColor: currentColor?.hex }}
+                  title={currentColor?.vietnameseName}
+                />
+              </div>
 
-                  <div className="p-2.5 rounded-xl bg-[#FAF7F2] border border-[#EFE5D5]">
-                    <span className="text-[10px] uppercase tracking-wider text-[#8C8273] block">Sự kiện phù hợp</span>
-                    <span className="text-xs font-medium text-[#241F1A] block mt-1">{occasion?.name}</span>
-                  </div>
+              {/* General Explanation */}
+              <p className="text-xs text-[#524A40] leading-relaxed">
+                {recommendation.explanation}
+              </p>
 
-                  <div className="p-2.5 rounded-xl bg-[#FAF7F2] border border-[#EFE5D5]">
-                    <span className="text-[10px] uppercase tracking-wider text-[#8C8273] block">Phong cách</span>
-                    <span className="text-xs font-medium text-[#241F1A] block mt-1">{style?.name}</span>
-                  </div>
-
-                  <div className="p-2.5 rounded-xl bg-[#FAF7F2] border border-[#EFE5D5]">
-                    <span className="text-[10px] uppercase tracking-wider text-[#8C8273] block">Phụ kiện đính kèm</span>
-                    <span className="text-xs font-medium text-[#241F1A] block mt-1">
-                      {recommendation.outfit.accessories.filter(a => a !== 'none').length} món
-                    </span>
-                  </div>
+              {/* "VÌ SAO NẾP CHỌN OUTFIT NÀY?" CARD */}
+              <div className="p-3.5 rounded-xl bg-[#FAF5EE] border border-[#EADECA] space-y-1.5">
+                <div className="flex items-center gap-1.5 text-xs font-semibold text-[#8B1E2F]">
+                  <Sparkles className="w-3.5 h-3.5 text-[#C69A52]" />
+                  <span>Vì sao NẾP chọn outfit này?</span>
                 </div>
-
-                {/* Accessories tags */}
-                {recommendation.outfit.accessories.filter(a => a !== 'none').length > 0 && (
-                  <div className="pt-1">
-                    <span className="text-[10px] uppercase tracking-wider text-[#8C8273] block mb-1.5">Chi tiết phụ kiện:</span>
-                    <div className="flex flex-wrap gap-1.5">
-                      {recommendation.outfit.accessories
-                        .filter(a => a !== 'none')
-                        .map(accId => {
-                          const acc = ACCESSORIES_CATALOG.find(a => a.id === accId);
-                          return acc ? (
-                            <span 
-                              key={acc.id}
-                              className="text-[11px] px-2 py-0.5 rounded-md bg-[#F4EFE6] text-[#52493E] border border-[#E2D8C6]"
-                            >
-                              {acc.name}
-                            </span>
-                          ) : null;
-                        })}
-                    </div>
-                  </div>
-                )}
-
-                {/* Why Nếp chose this */}
-                {recommendation.whyNepChoseThis && (
-                  <div className="p-3.5 rounded-xl bg-[#FBF7F0] border border-[#E5DECF] space-y-1">
-                    <span className="text-[11px] font-semibold text-[#8B1E2F] flex items-center gap-1.5">
-                      <BookOpen className="w-3.5 h-3.5" /> Vì sao NẾP gợi ý bản phối này?
-                    </span>
-                    <p className="text-xs text-[#52493E] leading-relaxed">
-                      {recommendation.whyNepChoseThis}
-                    </p>
-                  </div>
-                )}
-
-                {/* Cultural DNA Highlights */}
-                {recommendation.culturalDNAHighlights && recommendation.culturalDNAHighlights.length > 0 && (
-                  <div className="space-y-1.5">
-                    <span className="text-[11px] font-semibold text-[#736B5E] flex items-center gap-1.5">
-                      <Layers className="w-3.5 h-3.5 text-[#C89D42]" /> Điểm nhấn Văn Hóa (Cultural DNA)
-                    </span>
-                    <ul className="space-y-1">
-                      {recommendation.culturalDNAHighlights.map((hl, idx) => (
-                        <li key={idx} className="text-xs text-[#52493E] flex items-start gap-2">
-                          <span className="w-1.5 h-1.5 rounded-full bg-[#C89D42] mt-1.5 shrink-0" />
-                          <span>{hl}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
+                <p className="text-xs text-[#4F463D] leading-relaxed italic">
+                  "{recommendation.whyNepChoseThis}"
+                </p>
               </div>
 
-              {/* Action buttons */}
-              <div className="pt-2 flex items-center gap-3">
-                <button
-                  type="button"
-                  onClick={handleApply}
-                  className="flex-1 py-3 px-4 rounded-xl bg-[#8B1E2F] hover:bg-[#721524] text-white font-medium text-xs flex items-center justify-center gap-2 shadow-md cursor-pointer transition-all"
-                >
-                  <Sparkles className="w-4 h-4 text-[#E9D5A1]" />
-                  <span>Áp Dụng Vào Studio Ngay</span>
-                  <ArrowRight className="w-3.5 h-3.5" />
-                </button>
+              {/* Cultural Highlights */}
+              {recommendation.culturalDNAHighlights && recommendation.culturalDNAHighlights.length > 0 && (
+                <div className="space-y-1.5 pt-1">
+                  <span className="text-[11px] font-semibold text-[#736B60] uppercase tracking-wider">
+                    Điểm nhấn văn hóa:
+                  </span>
+                  <ul className="text-xs text-[#5A5146] space-y-1 pl-4 list-disc">
+                    {recommendation.culturalDNAHighlights.map((hl, i) => (
+                      <li key={i}>{hl}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
 
-                <button
-                  type="button"
-                  onClick={() => setRecommendation(null)}
-                  className="p-3 rounded-xl border border-[#D9CEBA] bg-white text-[#52493E] hover:bg-[#FAF7F2] transition-colors cursor-pointer"
-                  title="Thử yêu cầu khác"
-                >
-                  <RefreshCw className="w-4 h-4" />
-                </button>
-              </div>
+              {/* Changed fields if modified */}
+              {recommendation.changedFields && recommendation.changedFields.length > 0 && (
+                <div className="text-[11px] text-[#7C7469] flex items-center gap-1 bg-[#F5EFEB] px-2.5 py-1.5 rounded-lg">
+                  <Info className="w-3.5 h-3.5 text-[#3D7C85]" />
+                  <span>Thay đổi: {recommendation.changedFields.join(', ')}</span>
+                </div>
+              )}
+
+              {/* APPLY TO STUDIO BUTTON */}
+              <button
+                type="button"
+                onClick={handleApply}
+                disabled={applied}
+                className={`w-full py-3 rounded-xl font-medium text-sm flex items-center justify-center gap-2 transition-all cursor-pointer shadow-md ${
+                  applied
+                    ? 'bg-[#2E7D52] text-white'
+                    : 'bg-[#8B1E2F] hover:bg-[#721524] text-white active:scale-95'
+                }`}
+              >
+                {applied ? (
+                  <>
+                    <CheckCircle2 className="w-4 h-4" />
+                    <span>Đã áp dụng vào Studio!</span>
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="w-4 h-4 text-[#EBD292]" />
+                    <span>Áp dụng vào Studio ngay</span>
+                  </>
+                )}
+              </button>
             </div>
           )}
         </div>
@@ -327,5 +278,3 @@ export const AIStylistDrawer: React.FC<AIStylistDrawerProps> = ({
     </div>
   );
 };
-
-export default AIStylistDrawer;

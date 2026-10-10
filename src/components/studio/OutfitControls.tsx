@@ -45,6 +45,7 @@ export const OutfitControls: React.FC<OutfitControlsProps> = ({
   onOpenCulturalDna,
 }) => {
   const currentGarment = GARMENTS_DATA[outfit.garmentType];
+  const exclusiveHeadwear: AccessoryId[] = ['non_la','non_quai_thao','khan_dong','khan_mo_qua'];
 
   const handleGarmentChange = (type: GarmentType) => {
     const garment = GARMENTS_DATA[type];
@@ -72,6 +73,9 @@ export const OutfitControls: React.FC<OutfitControlsProps> = ({
       next = next.filter(id => id !== accId);
       if (next.length === 0) next = ['none'];
     } else {
+      if (exclusiveHeadwear.includes(accId)) {
+        next = next.filter(id => !exclusiveHeadwear.includes(id));
+      }
       next.push(accId);
     }
     onChange({ ...outfit, accessories: next });
@@ -242,13 +246,16 @@ export const OutfitControls: React.FC<OutfitControlsProps> = ({
               <button
                 key={acc.id}
                 type="button"
-                onClick={() => handleAccessoryToggle(acc.id)}
+                onClick={() => isCompatible && handleAccessoryToggle(acc.id)}
+                disabled={!isCompatible}
+                aria-pressed={isSelected}
+                title={!isCompatible ? 'Phụ kiện này chưa hỗ trợ với loại Việt phục đang chọn' : acc.description}
                 className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer flex items-start gap-2.5 ${
                   isSelected
                     ? 'bg-[#8B1E2F]/10 border-[#8B1E2F] text-[#8B1E2F]'
                     : isCompatible
                     ? 'bg-[#FAF7F2] border-[#E8DFC9] text-[#423C36] hover:bg-white'
-                    : 'bg-[#F2EFE9]/50 border-dashed border-[#DDD5C5] text-[#9E9589] hover:bg-[#F2EFE9]'
+                    : 'bg-[#F2EFE9]/50 border-dashed border-[#DDD5C5] text-[#9E9589] opacity-60 cursor-not-allowed'
                 }`}
               >
                 <div className={`mt-0.5 w-4 h-4 rounded border flex items-center justify-center text-[10px] shrink-0 ${
